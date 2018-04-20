@@ -4,6 +4,7 @@ import {Media, Col} from "react-bootstrap";
 const ContactDetail = (props) => {
     return(
 <Col xs={12}>
+<button id="backButton" onClick={props.detailSwitch}>Go Back</button>
 <Media>
 <Media.Left>
   <img width={128} height={128} src={props.contact.largeImageURL} alt="largethumbnail" />
