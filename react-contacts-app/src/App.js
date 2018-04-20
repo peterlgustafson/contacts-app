@@ -1,13 +1,19 @@
 import React, { Component } from 'react';
-import './App.css';
 import ContactCard from './components/contactlist';
 import ContactDetail from './components/contactdetail';
-import { Row, Grid } from "react-bootstrap";
-// import contactdetail from './components/contactdetail/contactdetail';
+import { Grid, Panel } from "react-bootstrap";
+import './App.css';
+
+//Global Variables for API Fetch & Sorted Arrays
 
 const proxyurl = "https://cors-anywhere.herokuapp.com/";
 
 const contactsAPI = 'https://s3.amazonaws.com/technical-challenge/v3/contacts.json';
+
+let contactFavoritesArray = [];
+let contactNotFavoritesArray = [];
+
+//Primary App Component
 
 class App extends Component {
 
@@ -22,70 +28,129 @@ class App extends Component {
   }
 
   componentWillMount() {
-
-    fetch(proxyurl + contactsAPI) // https://cors-anywhere.herokuapp.com/https://example.com
+    //Fetch API Call - Needed to add proxyurl to get around Cors issue
+    fetch(proxyurl + contactsAPI) 
       .then(response => response.json())
-      .then(contents => 
+      .then(contents =>
         contents.map(
           (contact) => {
             if (contact.isFavorite === true) {
-              this.setState({ contactFavorites: [...this.state.contactFavorites, contact] })
+              contactFavoritesArray.push(contact)
+              console.log(contactFavoritesArray);
             } else {
-              this.setState({ contactList: [...this.state.contactList, contact] })
+              contactNotFavoritesArray.push(contact)
             }
           }
         )
       )
+      .then(() => {
+        //Sorting Contact Favorites Array Alphabetically
+        contactFavoritesArray.sort(function (a, b) {
+
+          var nameA = a.name.toUpperCase();
+          var nameB = b.name.toUpperCase();
+
+          let sortedName;
+
+          if (nameA < nameB) {
+            sortedName = -1;
+          } else if (nameA === nameB) {
+            sortedName = 0;
+          } else {
+            sortedName = 1;
+          };
+          return sortedName;
+        });
+        
+        //Sorting Main Contacts Array Alphabetically
+        contactNotFavoritesArray.sort(function (a, b) {
+
+          var nameA = a.name.toUpperCase();
+          var nameB = b.name.toUpperCase();
+
+          let sortedName;
+
+          if (nameA < nameB) {
+            sortedName = -1;
+          } else if (nameA === nameB) {
+            sortedName = 0;
+          } else {
+            sortedName = 1;
+          };
+          return sortedName;
+        });
+      }
+      )
+      .then(() => {
+        this.setState({ contactFavorites: contactFavoritesArray });
+        this.setState({ contactList: contactNotFavoritesArray });
+      })
+
       .catch(() => console.log("Can’t access " + contactsAPI + " response. Blocked by browser?"))
   }
 
-  contactDetailOnClick = (event) => { 
+  //Method to Render Selected Contact Detailed Information
+  contactDetailOnClick = (event) => {
     const selectedContact = event.target.parentElement.parentElement.id;
     const allContacts = [...this.state.contactList, ...this.state.contactFavorites];
-    const selectedContactDetail = allContacts.find (function (contact) { return contact.id === selectedContact; }); 
+    const selectedContactDetail = allContacts.find(function (contact) { return contact.id === selectedContact; });
     console.log(selectedContactDetail);
-    if (selectedContactDetail != undefined) {
-    this.setState({cardDetail: selectedContactDetail});
-    this.setState({cardSelected: true});
-    // console.log(event.target.parentElement.parentElement.id);
-    // debugger;
+    if (selectedContactDetail !== undefined) {
+      this.setState({ cardDetail: selectedContactDetail });
+      this.setState({ cardSelected: true });
     }
   }
 
-  detailSwitch = (event) => { 
-    this.setState({cardSelected: false});
+  //Couldn't get Method working to Favorite/Unfavorite Contacts
+
+  // contactFavoriteOnClick = (event) => {
+  //   const selectedContactFavorite = event.target.parentElement.parentElement.id;
+  //   this.setState({ isFavorite: !this.isFavorite });
+
+  detailSwitch = (event) => {
+    this.setState({ cardSelected: false });
   }
 
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <h1 className="App-title">Contacts</h1>
-        </header>
+      <div className="Contacts-App">
         <Grid>
-          {(this.state.cardSelected) ? <ContactDetail detailSwitch={this.detailSwitch} contact={this.state.cardDetail} /> :  
-          <div>
-          <Row>
-            <h4>Favorite Contacts</h4>
-            {this.state.contactFavorites.map(
-              (contact) =>
-                <ContactCard contact={contact} contactDetailOnClick={this.contactDetailOnClick} />
-            )
+          {(this.state.cardSelected) ? <ContactDetail detailSwitch={this.detailSwitch} contactFavoriteOnClick={this.contactFavoriteOnClick} contact={this.state.cardDetail} /> :
+            <div>
+              <Panel>
+                <Panel.Heading>
+                  <Panel.Title componentClass="h1" id="contactsHeader">Contacts</Panel.Title>
+                </Panel.Heading>
+              </Panel>
+
+              <Panel>
+                <Panel.Heading>
+                  <Panel.Title componentClass="h3">Favorite Contacts</Panel.Title>
+                </Panel.Heading>
+                <Panel.Body>
+                  {this.state.contactFavorites.map(
+                    (contact) =>
+                      <ContactCard contact={contact} contactDetailOnClick={this.contactDetailOnClick} />
+                  )
+                  }
+                </Panel.Body>
+              </Panel>
+
+              <Panel>
+                <Panel.Heading>
+                  <Panel.Title componentClass="h3">Other Contacts</Panel.Title>
+                </Panel.Heading>
+                <Panel.Body>
+                  {this.state.contactList.map(
+                    (contact) =>
+                      <ContactCard contact={contact} contactDetailOnClick={this.contactDetailOnClick} />
+                  )
+                  }
+                </Panel.Body>
+              </Panel>
+
+            </div>
           }
-            </Row>
-          <Row>
-          <h4>Other Contacts</h4>
-
-            {this.state.contactList.map(
-              (contact) =>
-                <ContactCard contact={contact} contactDetailOnClick={this.contactDetailOnClick}/>
-            )
-            }
-
-          </Row>
-          </div>
-        } 
-
         </Grid>
       </div>
     );
